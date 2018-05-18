@@ -113,12 +113,16 @@ print(graph[[i]])
 
 # corrgram(lower.panel=panel.shade, upper.panel=panel.ellipse)
 
-num %>% na.omit() %>% 
-  select(TARGET,10:15) %>% 
+chr %>% skim()
+
+chr %>% na.omit() %>% 
+  select(TARGET,1:5) %>% 
   mutate(TARGET = factor(TARGET)) %>% 
-  ggpairs(aes(col = TARGET, alpha=.4, axisLabels = none))
+  ggpairs(aes(col = TARGET, alpha=.4))
 
 
+chr %>% filter(NAME_CONTRACT_TYPE=='Revolving loans') %>% select(TARGET) %>% table()
+chr %>% filter(NAME_CONTRACT_TYPE=='Cash loans') %>% select(TARGET) %>% table()
 
 num %>%
   select('AMT_INCOME_TOTAL', 'AMT_CREDIT', 'AMT_ANNUITY' ,

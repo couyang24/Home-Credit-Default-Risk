@@ -217,26 +217,20 @@ train %>%
 
 ```{r  message=FALSE, warning=FALSE}
 train %>% 
-  mutate(OCCUPATION_TYPE=as.factor(OCCUPATION_TYPE)) %>% 
   count(OCCUPATION_TYPE) %>% 
   plot_ly(x = ~OCCUPATION_TYPE , y = ~n, type = "bar") %>%
-  layout(title = "Occupation Type",  showlegend = T,
-         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  layout(title = "Occupation Type",  showlegend = F)
 ```
 
 
-## Housing Type
+## Organization Type
 
 
 ```{r  message=FALSE, warning=FALSE}
 train %>% 
-  count(NAME_HOUSING_TYPE) %>% 
-  plot_ly(labels = ~NAME_HOUSING_TYPE , values = ~n) %>%
-  add_pie(hole = 0.6) %>%
-  layout(title = "Education Distribution",  showlegend = T,
-         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  count(ORGANIZATION_TYPE) %>% 
+  plot_ly(x = ~ORGANIZATION_TYPE , y = ~n, type = "bar") %>%
+  layout(title = "Organization Type",  showlegend = F)
 ```
 
 
@@ -256,17 +250,17 @@ num <- train[,sapply(train,is.numeric)]
 
 
 ```{r  message=FALSE, warning=FALSE}
-# graph <- list()
-# 
-# for (i in 1:21){
-#   
-# graph[[i]] <- num %>% na.omit() %>% 
-#     select(TARGET,((i-1)*5+1):((i-1)*5+5)) %>% 
-#     mutate(TARGET = factor(TARGET)) %>% 
-#     ggpairs(aes(col = TARGET, alpha=.4))
-#   
-# print(graph[[i]])
-# }
+graph <- list()
+
+for (i in 1:21){
+
+graph[[i]] <- num %>% na.omit() %>%
+    select(TARGET,((i-1)*5+1):((i-1)*5+5)) %>%
+    mutate(TARGET = factor(TARGET)) %>%
+    ggpairs(aes(col = TARGET, alpha=.4))
+
+print(graph[[i]])
+}
 
 
 ```

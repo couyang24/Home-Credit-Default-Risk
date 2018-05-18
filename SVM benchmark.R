@@ -4,7 +4,7 @@ library(skimr)
 library(DT)
 library(plotly)
 
-<img src="https://i.imgur.com/O6QrzdG.jpg">
+# <img src="https://i.imgur.com/O6QrzdG.jpg">
 
 train <-fread('application_train.csv', stringsAsFactors = FALSE, showProgress=F,
               data.table = F, na.strings=c("NA","NaN","?", ""))

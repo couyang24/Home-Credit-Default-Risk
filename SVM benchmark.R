@@ -4,6 +4,7 @@ library(skimr)
 library(DT)
 library(plotly)
 library(mice)
+library(e1071)
 
 
 train <-fread('application_train.csv', stringsAsFactors = FALSE, showProgress=F,

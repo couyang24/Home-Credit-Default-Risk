@@ -1,0 +1,206 @@
+---
+title: 'Home Credit Default Analysis'
+author: "Chengran (Owen) Ouyang"
+date: '`r Sys.Date()`'
+output:
+  html_document:
+    number_sections: true
+    fig_caption: true
+    toc: true
+    fig_width: 7
+    fig_height: 4.5
+    theme: cosmo
+    highlight: tango
+    code_folding: hide
+---
+******
+# Introduction
+******
+
+
+<img src="https://i.imgur.com/O6QrzdG.jpg">
+
+
+**Objectives:** The goal of this kernel is to analyze home credit default via a full data science framework. 
+
+
+In this version, I will only go through some basic EDA and look into the dataset. As I drive into the dataset, I will add more content into this kernel.
+
+
+If you have any question, please leave a comment and if you like the kernel, please give me an upvote~ Thanks!
+
+
+******
+# Basic Set up{.tabset .tabset-fade .tabset-pills}
+******
+
+
+******
+## Load Packages
+******
+
+```{r  message=FALSE, warning=FALSE}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, skimr, GGally, plotly, viridis, caret, DT, data.table)
+```
+
+******
+## Load Dataset
+******
+
+```{r  message=FALSE, warning=FALSE}
+train <-fread('application_train.csv', stringsAsFactors = FALSE, showProgress=F,
+              data.table = F, na.strings=c("NA","NaN","?", ""))
+test <-fread('application_test.csv', stringsAsFactors = FALSE, showProgress=F,
+             data.table = F, na.strings=c("NA","NaN","?", ""))
+```
+
+******
+# EDA{.tabset .tabset-fade .tabset-pills}
+******
+
+
+******
+## First Glimpse via DT
+******
+
+
+Let's take 1000 observation as a sample and have a very brief look at the data.
+
+
+```{r  message=FALSE, warning=FALSE}
+train[sample(1:nrow(train), size = 1000),] %>% 
+  datatable(filter = 'top', options = list(
+    pageLength = 15, autoWidth = TRUE
+  ))
+```
+
+
+******
+## Second Glimpse via skim
+******
+
+
+skim would give you the outlook of the dataset, number of observations, number of columns, the range of the variables, number of missing/ unique values, the histogram, etc.
+
+
+As it shows here, there are `r ncol(train)` variables and `r nrow(train)` observations in the training set.
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% skim() %>% kable()
+```
+
+
+#???Variables{.tabset .tabset-fade .tabset-pills}
+
+
+## TARGET
+
+
+If you don't know which variable you are predicting, you can use this code to find out.
+
+
+```{r  message=FALSE, warning=FALSE}
+setdiff(names(train), names(test))
+```
+
+
+TARGET is a binary variable and it is unbalanced with most of its value in 0.
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% count(TARGET) %>% kable()
+```
+
+
+Then, we will have a look at the distribution of TARGET via Plotly
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(TARGET) %>% 
+  plot_ly(labels = ~TARGET, values = ~n, type = 'pie') %>%
+  layout(title = 'Target Variable Distribution',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## Gender
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(CODE_GENDER) %>% 
+  plot_ly(labels = ~CODE_GENDER , values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Gender Distribution",  showlegend = F,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## Education
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(NAME_EDUCATION_TYPE) %>% 
+  plot_ly(labels = ~NAME_EDUCATION_TYPE , values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Education Distribution",  showlegend = F,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+# Preprocess
+
+
+There are many preprocess needed to be done but let's just separate character and numeric varaibles this time.
+
+
+```{r  message=FALSE, warning=FALSE}
+chr <- train[,sapply(train,is.character)]
+num <- train[,sapply(train,is.numeric)]
+```
+
+
+# GGally
+
+
+```{r  message=FALSE, warning=FALSE}
+graph <- list()
+
+for (i in 1:21){
+  
+graph[[i]] <- num %>% na.omit() %>% 
+    select(TARGET,((i-1)*5+1):((i-1)*5+5)) %>% 
+    mutate(TARGET = factor(TARGET)) %>% 
+    ggpairs(aes(col = TARGET, alpha=.4))
+  
+print(graph[[i]])
+}
+
+
+```
+
+
+******
+# Conclusion
+******
+
+
+To be Continued.
+
+
+If you have any question, please leave a comment and if you like the kernel, please give a upvote~ Thanks!
+
+
+******
+# References
+******
+
+
+[Home Credit Default Risk : EDA ??????](https://www.kaggle.com/codename007/home-credit-default-risk-eda)

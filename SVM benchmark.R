@@ -13,34 +13,8 @@ test <-fread('application_test.csv', stringsAsFactors = FALSE, showProgress=F,
 full <- bind_rows(train,test)
 
 
-
-setdiff(names(train),names(test))
-
-train %>% 
-  count(TARGET) %>% 
-  plot_ly(labels = ~TARGET, values = ~n, type = 'pie') %>%
-  layout(title = 'Target Variable Distribution',
-         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-
-
-
-full %>% skim() %>% kable()
-
-full[sample(1:nrow(full),size = 1000),] %>% 
-  datatable(filter = 'top', options = list(
-    pageLength = 15, autoWidth = TRUE
-  ))
-
-
-
 Target <- train$TARGET
 Id <- test$SK_ID_CURR
-
-
-
-full$TARGET %>% table()
-
 
 full[,c('SK_ID_CURR','TARGET')] <- NULL
 rm(train, test)

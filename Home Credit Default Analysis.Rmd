@@ -1,0 +1,441 @@
+---
+title: 'Home Credit Default Analysis'
+author: "Chengran (Owen) Ouyang"
+date: '`r Sys.Date()`'
+output:
+  html_document:
+    number_sections: true
+    fig_caption: true
+    toc: true
+    fig_width: 7
+    fig_height: 4.5
+    theme: cosmo
+    highlight: tango
+    code_folding: hide
+---
+******
+# Introduction
+******
+
+
+<img src="https://i.imgur.com/O6QrzdG.jpg">
+
+
+**Objectives:** The goal of this kernel is to analyze home credit default via a full data science framework. 
+
+
+EDA includes datatable, skim, and plotly and xgboost with histogram is used as the model for this analysis.
+
+
+Each version of the kernel is an update and the detailed information is listed in the version session.
+
+
+If you have any question, please leave a comment and if you like the kernel, please give me an upvote~ Thanks!
+
+
+******
+# Basic Set up{.tabset .tabset-fade .tabset-pills}
+******
+
+
+******
+## Load Packages
+******
+
+```{r  message=FALSE, warning=FALSE}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, skimr, GGally, plotly, viridis, 
+               caret, DT, data.table, xgboost)
+```
+
+******
+## Load Dataset
+******
+
+```{r  message=FALSE, warning=FALSE}
+train <-fread('../input/application_train.csv', stringsAsFactors = FALSE, showProgress=F,
+              data.table = F, na.strings=c("NA","NaN","?", ""))
+test <-fread('../input/application_test.csv', stringsAsFactors = FALSE, showProgress=F,
+             data.table = F, na.strings=c("NA","NaN","?", ""))
+```
+
+******
+# Glimpse of Data{.tabset .tabset-fade .tabset-pills}
+******
+
+
+******
+## First Glimpse via DT
+******
+
+
+Let's take 1000 observation as a sample and have a very brief look at the data.
+
+
+```{r  message=FALSE, warning=FALSE}
+train[sample(1:nrow(train), size = 1000),] %>% 
+  datatable(filter = 'top', options = list(
+    pageLength = 15, autoWidth = F
+  ))
+```
+
+
+******
+## Second Glimpse via skim
+******
+
+
+As it shows here, there are `r ncol(train)` variables and `r nrow(train)` observations in the training set.
+
+
+skim would give you the outlook of the dataset, number of observations, number of columns, the range of the variables, number of missing/ unique values, the histogram, etc. It can serve as a one stop tool to check out most aspects of the data at once.
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% skim() %>% kable()
+```
+
+
+# Variables Exploration{.tabset .tabset-fade .tabset-pills}
+
+
+## TARGET
+
+
+If you don't know which variable you are predicting, you can use this code to find out.
+
+
+```{r  message=FALSE, warning=FALSE}
+setdiff(names(train), names(test))
+```
+
+
+TARGET is a binary variable and it is highly imbalanced with most of its value in 0.
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% count(TARGET) %>% kable()
+```
+
+
+Then, we will have a look at the distribution of TARGET via Plotly
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(TARGET) %>% 
+  plot_ly(labels = ~TARGET, values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Targey Distribution",  showlegend = T,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## Gender
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(CODE_GENDER) %>% 
+  plot_ly(labels = ~CODE_GENDER , values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Gender Distribution",  showlegend = T,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## Contract Type
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(NAME_CONTRACT_TYPE) %>% 
+  plot_ly(labels = ~NAME_CONTRACT_TYPE , values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Education Distribution",  showlegend = T,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## Education
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(NAME_EDUCATION_TYPE) %>% 
+  plot_ly(labels = ~NAME_EDUCATION_TYPE , values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Education Distribution",  showlegend = T,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## Housing Type
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(NAME_HOUSING_TYPE) %>% 
+  plot_ly(labels = ~NAME_HOUSING_TYPE , values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Housing Type Distribution",  showlegend = T,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## Income Type
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(NAME_INCOME_TYPE) %>% 
+  plot_ly(labels = ~NAME_INCOME_TYPE , values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "Income Type Distribution",  showlegend = T,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## House Type Mode
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  count(HOUSETYPE_MODE ) %>% 
+  plot_ly(labels = ~HOUSETYPE_MODE, values = ~n) %>%
+  add_pie(hole = 0.6) %>%
+  layout(title = "House Type Mode Distribution",  showlegend = T,
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+
+## Occupation Type
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  mutate(TARGET=as.factor(TARGET)) %>% 
+  count(OCCUPATION_TYPE, TARGET) %>% 
+  plot_ly(x = ~OCCUPATION_TYPE , y = ~n, color = ~TARGET, type = "bar") %>%
+  # add_trace(y = ~LA_Zoo, name = 'LA Zoo')   %>%
+  layout(title = "Occupation Type Group",
+         barmode = 'group',
+         xaxis = list(title = ""),
+         yaxis = list(title = ""))
+
+train %>% 
+  mutate(TARGET=as.factor(TARGET)) %>% 
+  count(OCCUPATION_TYPE, TARGET) %>% 
+  plot_ly(x = ~OCCUPATION_TYPE , y = ~n, color = ~TARGET,type = "bar") %>%
+  # add_trace(y = ~LA_Zoo, name = 'LA Zoo')   %>%
+  layout(title = "Occupation Type Group" , 
+          barmode = 'stack',
+         xaxis = list(title = ""),
+         yaxis = list(title = ""))
+```
+
+
+## Organization Type
+
+
+```{r  message=FALSE, warning=FALSE}
+train %>% 
+  mutate(TARGET=as.factor(TARGET)) %>% 
+  count(ORGANIZATION_TYPE, TARGET) %>% 
+  plot_ly(x = ~ORGANIZATION_TYPE, y = ~n, color = ~TARGET, type = "bar") %>%
+  # add_trace(y = ~LA_Zoo, name = 'LA Zoo')   %>%
+  layout(title = "ORGANIZATION_TYPE Type Group",
+         barmode = 'group',
+         xaxis = list(title = ""),
+         yaxis = list(title = ""))
+
+train %>% 
+  mutate(TARGET=as.factor(TARGET)) %>% 
+  count(ORGANIZATION_TYPE, TARGET) %>% 
+  plot_ly(x = ~ORGANIZATION_TYPE , y = ~n, color = ~TARGET,type = "bar") %>%
+  # add_trace(y = ~LA_Zoo, name = 'LA Zoo')   %>%
+  layout(title = "ORGANIZATION_TYPE Type Group" , 
+          barmode = 'stack',
+         xaxis = list(title = ""),
+         yaxis = list(title = ""))
+```
+
+
+# Preprocess
+
+
+There are many preprocess needed to be done but let's just separate character and numeric varaibles this time.
+
+```{r  message=FALSE, warning=FALSE}
+full <- bind_rows(train,test)
+
+Target <- train$TARGET
+Id <- test$SK_ID_CURR
+full[,c('SK_ID_CURR','TARGET')] <- NULL
+
+chr <- full[,sapply(full, is.character)]
+num <- full[,sapply(full, is.numeric)]
+
+chr[is.na(chr)] <- "Not Available"
+
+fac <- chr %>% 
+  lapply(as.factor) %>% 
+  as_data_frame()
+
+
+full <- bind_cols(fac, num)
+rm(chr, fac, num)
+
+full[is.na(full)] <- 0
+
+num <- train[,sapply(train,is.numeric)]
+
+rm(train, test)
+
+train <- full[1:length(Target),]
+test <- full[(length(Target)+1):nrow(full),]
+```
+
+
+# GGally
+
+
+```{r  message=FALSE, warning=FALSE}
+
+graph <- list()
+
+for (i in 1:21){
+
+graph[[i]] <- num %>% na.omit() %>%
+    select(TARGET,((i-1)*5+1):((i-1)*5+5)) %>%
+    mutate(TARGET = factor(TARGET)) %>%
+    ggpairs(aes(col = TARGET, alpha=.4))
+
+print(graph[[i]])
+}
+
+
+```
+
+
+******
+# Cross Validation Setup
+******
+
+```{r  message=FALSE, warning=FALSE}
+set.seed(1)
+inTrain <- createDataPartition(Target, p=.9, list = F)
+
+tr <- train[inTrain,]
+va <- train[-inTrain,]
+
+tr_ta <- Target[inTrain]
+va_ta <- Target[-inTrain]
+```
+
+******
+# Modelling
+******
+
+
+I used xgboost with histogram as a benchmark approach. 
+
+
+```{r  message=FALSE, warning=FALSE}
+data.train <- xgb.DMatrix(data = data.matrix(tr), label = tr_ta)
+data.valid <- xgb.DMatrix(data = data.matrix(va), label = va_ta)
+data.test <- xgb.DMatrix(data = data.matrix(test))
+
+
+parameters <- list(
+  # General Parameters
+  booster            = "gbtree"      
+  , silent             = 0      
+  # Booster Parameters
+  , eta                = 0.02              
+  , gamma              = 0.7                 
+  , max_depth          = 8               
+  , min_child_weight   = 2            
+  , subsample          = .9                 
+  , colsample_bytree   = .5                
+  , colsample_bylevel  = 1          
+  , lambda             = 1    
+  , alpha              = 0       
+  # Task Parameters
+  , objective          = "binary:logistic"   # default = "reg:linear"
+  , eval_metric        = "auc"
+  , seed               = 1               # reproducability seed
+  , tree_method = "hist"
+  , grow_policy = "lossguide"
+)
+
+xgb_model <- xgb.train(parameters, data.train, nrounds = 3000, list(val = data.valid), print_every_n = 50, early_stopping_rounds = 200)
+```
+
+
+Importance of the Variables via kable and ggplot
+
+
+```{r  message=FALSE, warning=FALSE}
+xgb.importance(colnames(train), model = xgb_model) %>% kable()
+xgb.imp <- xgb.importance(colnames(train), model = xgb_model) %>% head(20)
+xgb.ggplot.importance(importance_matrix = xgb.imp)
+```
+
+
+Make the prediction and prepare for the submission.
+
+
+```{r  message=FALSE, warning=FALSE}
+xgb_pred <- predict(xgb_model, data.test)
+
+result <- data.frame(SK_ID_CURR = Id, TARGET = xgb_pred)
+
+write.csv(result,"xgb_pred.csv", row.names = F)
+```
+
+
+******
+# Conclusion
+******
+
+
+To be Continued.
+
+
+If you have any question, please leave a comment and if you like the kernel, please give a upvote~ Thanks!
+
+
+******
+# References
+******
+
+
+[Home Credit Default Risk : EDA](https://www.kaggle.com/codename007/home-credit-default-risk-eda)
+
+
+******
+# Versions
+******
+
+
+**Version 1: Basic Framework plus EDA**
+
+
+**Version 2: EDA with more variables**
+
+
+**Version 3: EDA change Bar chart**
+
+
+**Version 4, 5: Adding xgboost with histogram model**
+
+
+**Version 6: Adding Cross Validation into the model**

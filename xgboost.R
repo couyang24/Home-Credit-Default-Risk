@@ -5,9 +5,9 @@ pacman::p_load(tidyverse, skimr, GGally, plotly, viridis,
 
 
 
-train <-fread('../input/application_train.csv', stringsAsFactors = FALSE, showProgress=F,
+train <-fread('application_train.csv', stringsAsFactors = FALSE, showProgress=F,
               data.table = F, na.strings=c("NA","NaN","?", ""))
-test <-fread('../input/application_test.csv', stringsAsFactors = FALSE, showProgress=F,
+test <-fread('application_test.csv', stringsAsFactors = FALSE, showProgress=F,
              data.table = F, na.strings=c("NA","NaN","?", ""))
 full <- bind_rows(train,test)
 # bureau <- fread('../input/bureau.csv', stringsAsFactors = FALSE, showProgress=F,
@@ -80,10 +80,11 @@ parameters <- list(
 xgb_model <- xgb.train(parameters, data.train, nrounds = 3000, list(val = data.valid), print_every_n = 50, early_stopping_rounds = 200)
 
 xgb.importance(colnames(train), model = xgb_model) %>% kable()
-xgb.imp <- xgb.importance(colnames(train), model = xgb_model)
+xgb.imp <- xgb.importance(colnames(train), model = xgb_model) %>% head(20)
 xgb.ggplot.importance(importance_matrix = xgb.imp)
 
-xgb_pred <- predict(xgb_model, data.test)
+
+xgb_pred <- predict(xgb_model, data.test, ntreelimit = xgb_model$best_iteration)
 
 result <- data.frame(SK_ID_CURR = Id, TARGET = xgb_pred)
 

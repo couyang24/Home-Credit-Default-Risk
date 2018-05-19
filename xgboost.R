@@ -60,12 +60,12 @@ parameters <- list(
   booster            = "gbtree"      
   , silent             = 0      
   # Booster Parameters
-  , eta                = 0.02              
-  , gamma              = 0.7                 
-  , max_depth          = 8               
-  , min_child_weight   = 2            
-  , subsample          = .9                 
-  , colsample_bytree   = .5                
+  , eta                = 0.1              
+  , gamma              = 0                
+  , max_depth          = 6               
+  , min_child_weight   = 1            
+  , subsample          = 1                 
+  , colsample_bytree   = 1                
   , colsample_bylevel  = 1          
   , lambda             = 1    
   , alpha              = 0       
@@ -77,7 +77,7 @@ parameters <- list(
   , grow_policy = "lossguide"
 )
 
-xgb_model <- xgb.train(parameters, data.train, nrounds = 3000, list(val = data.valid), print_every_n = 50, early_stopping_rounds = 200)
+xgb_model <- xgb.train(parameters, data.train, nrounds = 100, list(val = data.valid), print_every_n = 50, early_stopping_rounds = 200)
 
 xgb.importance(colnames(train), model = xgb_model) %>% kable()
 xgb.imp <- xgb.importance(colnames(train), model = xgb_model) %>% head(20)
